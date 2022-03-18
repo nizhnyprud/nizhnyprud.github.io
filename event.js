@@ -23,13 +23,15 @@ function addTableRow() {
     window.NP.max_row_idx += 1;
   }
 
+  const new_row_idx = window.NP.max_row_idx;
+
   var cell_0 = addNewCell(new_row, 0, 2);
   var cell_1 = addNewCell(new_row, 1, 3);
   var cell_2 = addNewCell(new_row, 2, 8);
   var cell_3 = addNewCell(new_row, 3, 1);
 
   var input = document.createElement("input");
-  input.id = "cell_" + window.NP.max_row_idx + "_" + 0;
+  input.id = "cell_" + new_row_idx + "_" + 0;
   input.type = "text";
   input.className = "form-control col"
   input.placeholder = "NP-1";
@@ -39,16 +41,16 @@ function addTableRow() {
   cell_0.appendChild(input);
 
   var scan_position_button = document.createElement("button");
-  scan_position_button.id = "btn_" + window.NP.max_row_idx + "_" + 0;
+  scan_position_button.id = "btn_" + new_row_idx + "_" + 0;
   scan_position_button.innerText = "S";
   scan_position_button.className = "btn btn-primary rounded col-md-auto";
   scan_position_button.onclick=function () {
-    appendNewBarcode(0);
+    appendNewBarcode(new_row_idx, 0);
   };
   cell_0.appendChild(scan_position_button);
 
   var input = document.createElement("input");
-  input.id = "cell_" + window.NP.max_row_idx + "_" + 1;
+  input.id = "cell_" + new_row_idx + "_" + 1;
   input.type = "text";
   input.className = "form-control col"
   input.placeholder = "A123123112";
@@ -58,16 +60,16 @@ function addTableRow() {
   cell_1.appendChild(input);
 
   var scan_token_button = document.createElement("button");
-  scan_token_button.id = "btn_" + window.NP.max_row_idx + "_" + 1;
+  scan_token_button.id = "btn_" + new_row_idx + "_" + 1;
   scan_token_button.innerText = "S";
   scan_token_button.className = "btn btn-primary rounded col-md-auto";
   scan_token_button.onclick= function () {
-    appendNewBarcode(1);
+    appendNewBarcode(new_row_idx, 1);
   };
   cell_1.appendChild(scan_token_button);
 
   var input = document.createElement("input");
-  input.id = "cell_" + window.NP.max_row_idx + "_" + 2;
+  input.id = "cell_" + new_row_idx + "_" + 2;
   input.type = "text";
   input.className = "form-control col"
   input.placeholder = "";
@@ -77,7 +79,7 @@ function addTableRow() {
   cell_2.appendChild(input);
 
   var remove_button = document.createElement("button");
-  remove_button.id = "remove_btn_" + window.NP.max_row_idx;
+  remove_button.id = "remove_btn_" + new_row_idx;
   remove_button.innerText = "Удалить";
   remove_button.className = "btn btn-danger";
   remove_button.onclick = function () {
@@ -97,35 +99,35 @@ function removeTableRow(row_idx) {
   btn.onclick();
 }
 
-async function appendNewBarcode(cell_idx) {
-  var btn = document.getElementById('btn_' + window.NP.max_row_idx + "_" + cell_idx);
+async function appendNewBarcode(row_idx, cell_idx) {
+  var btn = document.getElementById('btn_' + row_idx + "_" + cell_idx);
   btn.className = "btn rounded col-md-auto btn-danger";
   btn.onclick = function () {
     cancelScanning();
 
     this.className = "btn rounded col-md-auto btn-primary";
     this.onclick = function () {
-      appendNewBarcode(cell_idx);
+      appendNewBarcode(row_idx, cell_idx);
     }
   }
 
   var token = await scanBarcode();
 
   if (isTokenCorrect(token)) {
+    btn.className = "btn rounded col-md-auto btn-primary";
+    btn.onclick = function () {
+      appendNewBarcode(row_idx, cell_idx);
+    }
     console.log(token);
-    var cell = document.getElementById('cell_' + window.NP.max_row_idx + "_" + cell_idx);
+    var cell = document.getElementById('cell_' + row_idx + "_" + cell_idx);
+    console.log('cell_' + row_idx + "_" + cell_idx, cell);
     cell.value = token;
     cell.onchange();
     if (cell_idx == 0) {
-      await appendNewBarcode(1);
+      await appendNewBarcode(row_idx, 1);
     }
   } else {
     statusFail("Token " + token + " is incorrect");
-  }
-
-  btn.className = "btn rounded col-md-auto btn-primary";
-  btn.onclick = function () {
-    appendNewBarcode(cell_idx);
   }
 }
 
