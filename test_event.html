@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Последний забег</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script src="https://apis.google.com/js/api.js"></script>
+
+  <script src="./status.js"></script>
+  <script src="./gsheet.js"></script>
+
+  <script type="text/javascript">
+    window.NP = {}
+    window.NP.max_row_idx = -1;
+    window.NP.spreadsheetId = "1ffFLBobDeG0PEaZHYsseU_TjRHolKy5gyoAzAZlonqs";
+    window.addEventListener('load', () => {
+      //gapi.auth2.getAuthInstance().signOut();
+      handleClientLoad(() => {
+        //console.log("Callback before auth message");
+        gapi.auth2.getAuthInstance().signIn();
+        console.log("Callback after auth message");
+
+        const load_btn = document.getElementById("load");
+        load_btn.onclick = () => {
+          const div = document.getElementById("event_caption");
+          drawLastEventResults(window.NP.spreadsheetId, div).then(() => statusSuccess("Loaded")).catch((e) => statusSuccess("Failed load " + e));
+        };
+
+        const modify_btn = document.getElementById("modify");
+        modify_btn.onclick = () => {
+          modifyEventResult(window.NP.spreadsheetId).then(() => statusSuccess("Modified")).catch((e) => statusSuccess("Failed modify " + e));;
+        };
+      });
+    });
+  </script>
+</head>
+
+<body>
+  <h1>ТЕСТОВАЯ СТРАНИЦА</h1>
+  <div class="container" id="event_caption">
+  </div>
+
+  <div class="container">
+    <div class="row text-center">
+      <button id="load" class="btn btn-primary btn-lg m-1">Загрузить результаты</button>
+      <button id="modify" class="btn btn-primary btn-lg m-1">Новая строка</button>
+    </div>
+  </div>
+
+</body>
+
+</html>
