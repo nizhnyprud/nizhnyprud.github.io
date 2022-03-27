@@ -1,15 +1,15 @@
 /**
  *  On load, called to load the google auth2 library and API client library.
  */
- function handleClientLoad(callback) {
-  gapi.load('client:auth2', () => {initClient(callback);});
+ function handleClientLoad(success_callback, fail_callback) {
+  gapi.load('client:auth2', () => {initClient(success_callback, fail_callback);});
 }
 
 /**
  *  Initializes the API client library and sets up sign-in state
  *  listeners.
  */
-function initClient(callback) {
+function initClient(success_callback, fail_callback) {
   var CLIENT_ID = '788445116277-mvh79aip6tbke5m34apbag2uppk9r2fe.apps.googleusercontent.com';
   var API_KEY = 'AIzaSyDgPY0auUUH8DLhdIc6naGOQPncYQkMlsY';
   var DISCOVERY_DOCS = ["https://sheets.googleapis.com/$discovery/rest?version=v4"];
@@ -21,16 +21,12 @@ function initClient(callback) {
     discoveryDocs: DISCOVERY_DOCS,
     scope: SCOPES
   }).then(function () {
-    gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
+    gapi.auth2.getAuthInstance().isSignedIn.listen((s) => updateSigninStatus(s, success_callback, fail_callback));
 
     // Handle the initial sign-in state.
-    updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
-    if (callback) {
-      callback();
-    }
+    updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get(), success_callback, fail_callback);
   }, function (error) {
     console.error(error);
-    statusFail("Не получилось подключиться к Google Sheets :" + error);
   });
 }
 
@@ -38,11 +34,17 @@ function initClient(callback) {
  *  Called when the signed in status changes, to update the UI
  *  appropriately. After a sign-in, the API is called.
  */
-function updateSigninStatus(isSignedIn) {
+function updateSigninStatus(isSignedIn, success_callback, fail_callback) {
   if (isSignedIn) {
     statusSuccess("Авторизация успешна");
+    if (success_callback != null) {
+      success_callback();
+    }
   } else {
-    statusFail("Не удалось авторизоваться");
+    statusFail("Необходимо авторизоваться");
+    if (fail_callback != null) {
+      fail_callback();
+    }
   }
 }
 
@@ -90,6 +92,7 @@ async function drawLastEventResults(spreadsheetId, parent) {
   
   var caption  =document.createElement("caption");
   caption.className = "fs-4 text-center";
+  caption.innerText = "Результаты забега от " + title;
   table.appendChild(caption);
 
   var thead = document.createElement("thead");
