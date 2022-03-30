@@ -1,15 +1,15 @@
 /**
  *  On load, called to load the google auth2 library and API client library.
  */
- function handleClientLoad(success_callback, fail_callback) {
-  gapi.load('client:auth2', () => {initClient(success_callback, fail_callback);});
+ function handleClientLoad(success_callback, fail_callback, before_callback) {
+  gapi.load('client:auth2', () => {initClient(success_callback, fail_callback, before_callback);});
 }
 
 /**
  *  Initializes the API client library and sets up sign-in state
  *  listeners.
  */
-function initClient(success_callback, fail_callback) {
+function initClient(success_callback, fail_callback, before_callback) {
   var CLIENT_ID = '788445116277-mvh79aip6tbke5m34apbag2uppk9r2fe.apps.googleusercontent.com';
   var API_KEY = 'AIzaSyDgPY0auUUH8DLhdIc6naGOQPncYQkMlsY';
   var DISCOVERY_DOCS = ["https://sheets.googleapis.com/$discovery/rest?version=v4"];
@@ -21,10 +21,10 @@ function initClient(success_callback, fail_callback) {
     discoveryDocs: DISCOVERY_DOCS,
     scope: SCOPES
   }).then(function () {
-    gapi.auth2.getAuthInstance().isSignedIn.listen((s) => updateSigninStatus(s, success_callback, fail_callback));
+    gapi.auth2.getAuthInstance().isSignedIn.listen((s) => updateSigninStatus(s, success_callback, fail_callback, before_callback));
 
     // Handle the initial sign-in state.
-    updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get(), success_callback, fail_callback);
+    updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get(), success_callback, fail_callback, before_callback);
   }, function (error) {
     console.error(error);
   });
@@ -34,15 +34,19 @@ function initClient(success_callback, fail_callback) {
  *  Called when the signed in status changes, to update the UI
  *  appropriately. After a sign-in, the API is called.
  */
-function updateSigninStatus(isSignedIn, success_callback, fail_callback) {
+function updateSigninStatus(isSignedIn, success_callback, fail_callback, before_callback) {
+  if (before_callback != null) {
+    before_callback();
+  }
+
   if (isSignedIn) {
-    statusSuccess("Авторизация успешна");
     if (success_callback != null) {
+      statusSuccess("Авторизация успешна");
       success_callback();
     }
   } else {
-    statusFail("Необходимо авторизоваться");
     if (fail_callback != null) {
+      statusFail("Необходимо авторизоваться");
       fail_callback();
     }
   }
@@ -78,7 +82,7 @@ async function getLastEventTitle(spreadsheetId) {
 
 async function drawLastEventResults(spreadsheetId, parent) {
   var title = await getLastEventTitle(spreadsheetId);
-  console.log(title);
+
   var response_header = await gapi.client.sheets.spreadsheets.values.get({
     spreadsheetId: spreadsheetId,
     range: title + "!A1:F1",
@@ -168,4 +172,20 @@ async function modifyEventResult(spreadsheetId, range) {
   });
 
   console.log(response);
+}
+
+async function getAllParticipants(spreadsheetId) {
+  var response_values = await gapi.client.sheets.spreadsheets.values.get({
+    spreadsheetId: spreadsheetId,
+    range: "Participants!B2:C",
+  });
+
+  var lines = response_values.result.values;
+
+  var participants = {};
+  for (i = 0; i < lines.length; i++) {
+    participants[lines[i][0]] = lines[i][1];
+  }
+
+  return participants;
 }

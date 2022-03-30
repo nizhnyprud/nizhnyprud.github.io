@@ -19,49 +19,16 @@
     window.NP.max_row_idx = -1;
     window.NP.spreadsheetId = "1ffFLBobDeG0PEaZHYsseU_TjRHolKy5gyoAzAZlonqs";
     window.addEventListener('load', () => {
-      handleClientLoad(() => {
+      handleClientLoad(null, null, () => {
         const div = document.getElementById("event_results");
-        drawLastEventResults(window.NP.spreadsheetId, div).then(() => statusSuccess("Loaded")).catch((e) => statusSuccess("Failed load " + e));
-        document.getElementById("authorized").style = "display: block;";
-        document.getElementById("authorize").style = "display: none;";
-      }, () => {
-        document.getElementById("authorized").style = "display: none;";
-        document.getElementById("authorize").style = "display: block;";
+        drawLastEventResults(window.NP.spreadsheetId, div).catch((e) => statusSuccess("Failed load " + e));
       });
     });
-
-    function signIn() {
-      gapi.auth2.getAuthInstance().signIn().then(statusSuccess("Получение доступа к аккаунту Google")).catch((e) => statusFail("Не удалось получить доступ к аккаунту Google" + e));
-
-    }
-
-    function signOut() {
-      gapi.auth2.getAuthInstance().signOut().then(statusSuccess("Доступ к аккаунту Google отозван"));
-      const div = document.getElementById("event_results");
-      div.replaceChildren();
-    }
   </script>
 </head>
 
 <body>
-  <div class="container" id="authorized" style="display: none;">
-    <div class="row text-center">
-      <button id="signout" class="btn btn-primary btn-lg m-1" onclick="signOut();">Выйти из аккаунта Google</button>
-    </div>
-    <div class="container" id="event_results">
-    </div>
-  </div>
-
-  <div class="container" id="authorize">
-    <div class="row text-center bg-secondary text-white rounded mt-3">
-      Нажимая эту кнопку, вы даёте разрешение нашему сайту использовать Ваш аккаунт Google для того, чтобы достать из
-      нашей таблички данные о последнем забеге. Не беспокойтесь, единственное разрешение, которое получает наш сайт -
-      это работа с таблицами от Google. Разрешение действительно только в рамках нашего сайта и не используется ни для
-      чего, кроме чтения данных. Вы в любой момент можете выйти из аккаунту нажав на соответствующую кнопку.
-    </div>
-    <div class="row text-center">
-      <button id="signin" class="btn btn-primary btn-lg m-1" onclick="signIn();">Использовать аккаунт Google</button>
-    </div>
+  <div class="container" id="event_results">
   </div>
 
 </body>
