@@ -11,15 +11,24 @@
 
   <script type="text/javascript" src="https://unpkg.com/@zxing/library@latest"></script>
 
+  <script src="https://apis.google.com/js/api.js"></script>
+
   <script src="./status.js"></script>
   <script src="./barcode_scanner.js"></script>
   <script src="./event.js"></script>
+  <script src="./gsheet.js"></script>
 
   <script type="text/javascript">
     window.NP = {}
     window.NP.max_row_idx = -1;
     window.NP.spreadsheetId = "1ffFLBobDeG0PEaZHYsseU_TjRHolKy5gyoAzAZlonqs";
     window.addEventListener('load', () => {
+      handleClientLoad(null, null, () => {
+        getAllParticipants(window.NP.spreadsheetId).then((p) => {
+          window.NP.participants = p;
+        });
+
+      });
       var event_name = localStorage.getItem("event_name");
       if (event_name) {
         document.getElementById("event_caption").innerText = "Забег \"Нижний пруд\" от " + event_name;
@@ -38,6 +47,29 @@
     function clearLocalStorage() {
       localStorage.clear();
       window.location.reload();
+    }
+
+    async function uploadResults() {
+      var lines = await prepareResults();
+      var event_name = localStorage.getItem("event_name");
+
+      const signed_in = gapi.auth2.getAuthInstance().isSignedIn.get();
+      if (!signed_in) {
+        await gapi.auth2.getAuthInstance().signIn();
+
+        if (!gapi.auth2.getAuthInstance().isSignedIn.get()) {
+          statusFail("Can't sign in for upload data");
+        }
+      }
+
+      const success = await uploadNewEvent(window.NP.spreadsheetId, event_name, lines);
+      if (success) {
+        var btn = document.getElementById("upload_results");
+        btn.className = "btn btn-muted btn-lg w-100";
+        btn.disabled = true;
+      } else {
+        statusFail("Can't load document");
+      }
     }
   </script>
 </head>
@@ -70,17 +102,23 @@
 
     <div class="container">
       <div class="row text-center">
-        <button id="add_manually" class="btn btn-primary btn-lg m-1" onclick=addTableRow()>Новая строка</button>
+        <div class="col-lg-12 mt-1">
+          <button id="add_manually" class="btn btn-primary btn-lg w-100" onclick=addTableRow()>Новая строка</button>
+        </div>
+      </div>
 
-        <div class="row text-center">
-          <div class="col-10">
-            <button id="save_results" class="btn btn-success btn-lg m-1 w-100" onclick=saveResults()>Сохранить
-              результаты в
-              файл</button>
-          </div>
-          <div class="col-2">
-            <button id="save_results" class="btn btn-warning btn-lg m-1" onclick=clearLocalStorage()>Сбросить</button>
-          </div>
+      <div class="row text-center t-2">
+        <div class="col-lg-5 mt-1">
+          <button id="save_results" class="btn btn-success btn-lg w-100" onclick=saveResults()>Сохранить
+            результаты в
+            файл</button>
+        </div>
+        <div class="col-lg-5 mt-1">
+          <button id="upload_results" class="btn btn-warning btn-lg w-100" onclick=uploadResults()>Выгрузить
+            результаты на сайт</button>
+        </div>
+        <div class="col-lg-2 mt-1">
+          <button id="drop_results" class="btn btn-danger btn-lg w-100" onclick=clearLocalStorage()>Сбросить</button>
         </div>
       </div>
     </div>

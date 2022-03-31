@@ -189,3 +189,62 @@ async function getAllParticipants(spreadsheetId) {
 
   return participants;
 }
+
+async function uploadNewEvent(spreadsheetId, event_name, lines) {
+  var header = [
+      [
+        "Позиция на финише", "Токен", "Полное имя", "Время на финише", "Пол", "Позиция среди участников своего пола", "Возрастная категория", "Процент успеха в возрастной категории", "Персональное событие", "Количество участий в нашем забеге"
+      ]
+    ];
+
+  try {
+    var response = await gapi.client.sheets.spreadsheets.batchUpdate({
+      spreadsheetId: spreadsheetId,
+      requests: [
+        {
+          addSheet: {
+            properties: {
+              title: event_name,
+              gridProperties: {
+                columnCount: Object.keys(header[0]).length,
+                rowCount: lines.length + 1,
+                frozenRowCount: 1,
+                frozenColumnCount: 1,
+              },
+              tabColor: { 
+                red: 0.0,
+                green: 0.0,
+                blue: 1.0
+              },
+            }
+          }
+        },
+
+      ]
+    });
+
+    if (response.result.error != null) {
+      console.log(response);
+      return false;
+    }
+
+    response = await gapi.client.sheets.spreadsheets.values.append({
+      spreadsheetId: spreadsheetId,
+      range: event_name,
+      valueInputOption: "USER_ENTERED",
+      resource: {
+        values: header.concat(lines)
+      }
+    });
+
+    if (response.result.error != null) {
+      console.log(response);
+      return false;
+    }
+  } catch(err) {
+    console.log(err);
+    return false;
+  }
+
+  return true;
+}

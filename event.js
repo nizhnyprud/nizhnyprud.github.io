@@ -112,17 +112,29 @@ async function appendNewBarcode(row_idx, cell_idx) {
   }
 
   var token = await scanBarcode();
+  console.log(token);
 
   if (isTokenCorrect(token)) {
     btn.className = "btn rounded col-md-auto btn-primary";
     btn.onclick = function () {
       appendNewBarcode(row_idx, cell_idx);
     }
-    console.log(token);
+
+    console.log(window.NP.participants[token]);
     var cell = document.getElementById('cell_' + row_idx + "_" + cell_idx);
-    console.log('cell_' + row_idx + "_" + cell_idx, cell);
     cell.value = token;
     cell.onchange();
+
+    if (window.NP.participants != null) {
+      var full_name = window.NP.participants[token];
+      if (full_name != null) {
+        var cell = document.getElementById('cell_' + row_idx + "_" + 2);
+        cell.value = full_name;
+      }
+    } else {
+      console.log("Need to register new participant");
+    }
+
     if (cell_idx == 0) {
       await appendNewBarcode(row_idx, 1);
     }
@@ -147,8 +159,6 @@ function restoreValues() {
     }
   }
 
-  console.log(unique_rows, max_row_idx);
-
   for (var row_idx = 0; row_idx < max_row_idx; row_idx++) {
     addTableRow();
   }
@@ -168,7 +178,7 @@ function restoreValues() {
   }
 }
 
-function generateFile() {
+function generateFileContent() {
   var content = [];
   for (var i = 1; i <= window.NP.max_row_idx; i++) {
     var row;
@@ -177,15 +187,29 @@ function generateFile() {
         document.getElementById("cell_" + i + "_0").value,
         document.getElementById("cell_" + i + "_1").value,
         document.getElementById("cell_" + i + "_2").value
-      ].join("\t");
+      ];
     } catch (e) {
       console.log("No " + i + " value");
     }
-    content.push(row);
+    if (row != null) {
+      content.push(row);
+    }
   }
-  
+
+  return content;
+}
+
+function generateFile() {
+  const content = generateFileContent();
+
+  const lines = content.map(
+    (cur_val) => {
+      return cur_val.join("\t");
+    }
+  );
+
   var event_name = localStorage.getItem("event_name");
-  var tsv = content.join("\n");
+  var tsv = lines.join("\n");
   const file = new File([tsv], 'nizhnyprud_' + event_name + '_results.tsv', {
     type: 'text/tab-separated-values',
   });
@@ -206,9 +230,82 @@ function downloadFile(file) {
   window.URL.revokeObjectURL(url)
 }
 
+function uploadFile() {
+  return new Promise(resolve => {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = "txt";
+    input.onchange = (e) => {
+      var file = e.target.files[0]; 
+
+      var reader = new FileReader();
+      reader.readAsText(file,'UTF-8');
+
+      reader.onload = readerEvent => {
+          var content = readerEvent.target.result;
+          resolve(content);
+      }
+    }
+    input.click();
+  });
+  
+}
+
 function saveResults() {
   const file = generateFile();
   downloadFile(file);
+}
+
+function parseStopwatch(file_content) {
+  var lines = file_content.split(/\r?\n/);
+  var data = [];
+
+  var idx = 0;
+
+  Object.values(lines).forEach(line => {
+    if (!line) {
+      return;
+    }
+
+    var chunks = line.split(',');
+    if (!chunks) {
+      return;
+    }
+    
+    if (chunks.length != 3) {
+      return;
+    }
+
+    const pos = parseInt(chunks[0]);
+
+    if (!Number.isNaN(pos)) {
+      data.push({
+        position: pos + 1,
+        time: chunks[2],
+      });
+    }
+  });
+
+  return data;
+}
+
+async function prepareResults() {
+  const stopwatch_content = await uploadFile();
+  const records = parseStopwatch(stopwatch_content);
+
+  const content = generateFileContent();
+
+  var lines = []
+  for (var i = 0; i < content.length; i++) {
+    const pos = parseInt(content[i][0]);
+    if (!Number.isNaN(pos)) {
+      const record = records.find((v) => { return v.position == pos; })
+      const row = [content[i][0], content[i][1], content[i][2], record.time];
+      lines.push(row);
+    }
+  }
+
+  return lines;
 }
 
 function isEventNameCorrect(event_name) {
