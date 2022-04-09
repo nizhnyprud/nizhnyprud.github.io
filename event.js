@@ -177,7 +177,7 @@ function restoreValues() {
         cell.value = localStorage.getItem(key);
       }
       catch(e) {
-        
+
       }
     }
   }
@@ -286,7 +286,7 @@ function parseStopwatch(file_content) {
 
     if (!Number.isNaN(pos)) {
       data.push({
-        position: pos + 1,
+        position: pos,
         time: chunks[2],
       });
     }
@@ -332,16 +332,38 @@ function parsePastEvent(file_content) {
 async function prepareResults() {
   const [filename, stopwatch_content] = await uploadFile("txt");
   const records = parseStopwatch(stopwatch_content);
+  const sorted_records = records.sort(function (lhs, rhs) {
+    if (lhs.position < rhs.position) {
+      return -1;
+    }
+    if (lhs.position < rhs.position) {
+      return 1;
+    }
+
+    return 0;
+  });
 
   const content = generateFileContent();
+
+  var offs = 0;
+  try {
+    if (sorted_records[0].position == 0) {
+      offs = 1;
+    } 
+  } catch(e) {}
 
   var lines = []
   for (var i = 0; i < content.length; i++) {
     const pos = parseInt(content[i][0]);
     if (!Number.isNaN(pos)) {
-      const record = records.find((v) => { return v.position == pos; })
-      const row = [content[i][0], content[i][1], content[i][2], record.time];
-      lines.push(row);
+      const record = sorted_records.find((v) => { 
+        return v.position + offs == pos;
+      });
+      try {
+        const row = [content[i][0], content[i][1], content[i][2], record.time];
+        lines.push(row);
+      }
+      catch(e) {}
     }
   }
 
