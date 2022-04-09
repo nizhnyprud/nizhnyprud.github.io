@@ -173,7 +173,12 @@ function restoreValues() {
     var key = localStorage.key(i);
     if (/^cell_\d+_\d+$/.test(key)) {
       var cell = document.getElementById(key);
-      cell.value = localStorage.getItem(key);
+      try {
+        cell.value = localStorage.getItem(key);
+      }
+      catch(e) {
+        
+      }
     }
   }
 }
@@ -230,20 +235,21 @@ function downloadFile(file) {
   window.URL.revokeObjectURL(url)
 }
 
-function uploadFile() {
+function uploadFile(exts) {
   return new Promise(resolve => {
     var input = document.createElement('input');
     input.type = 'file';
-    input.accept = "txt";
+    input.accept = exts;
     input.onchange = (e) => {
       var file = e.target.files[0]; 
+      var filename = file.name;
 
       var reader = new FileReader();
       reader.readAsText(file,'UTF-8');
 
       reader.onload = readerEvent => {
           var content = readerEvent.target.result;
-          resolve(content);
+          resolve([filename, content]);
       }
     }
     input.click();
@@ -289,8 +295,42 @@ function parseStopwatch(file_content) {
   return data;
 }
 
+function parsePastEvent(file_content) {
+  var lines = file_content.split(/\r?\n/);
+  var data = [];
+
+  var idx = 0;
+
+  Object.values(lines).forEach(line => {
+    if (!line) {
+      return;
+    }
+
+    var chunks = line.split('\t');
+    if (!chunks) {
+      return;
+    }
+    
+    if (chunks.length != 3) {
+      return;
+    }
+
+    const pos = parseInt(chunks[0].trim());
+
+    if (!Number.isNaN(pos)) {
+      data.push({
+        position: pos,
+        token: chunks[1].trim(),
+        details: chunks[2].trim(),
+      });
+    }
+  });
+
+  return data;
+}
+
 async function prepareResults() {
-  const stopwatch_content = await uploadFile();
+  const [filename, stopwatch_content] = await uploadFile("txt");
   const records = parseStopwatch(stopwatch_content);
 
   const content = generateFileContent();
@@ -318,4 +358,27 @@ function startEvent() {
     localStorage.setItem("event_name", event_name);
     window.location.reload();
   }
+}
+
+async function preparePastEvent() {
+  const [filename, past_event_content] = await uploadFile("txt");
+  const event_name = filename.split('_')[1];
+  
+  if (isEventNameCorrect(event_name)) {
+    localStorage.setItem("event_name", event_name);
+  }
+
+  const records = parsePastEvent(past_event_content);
+  const sorted_records = records.sort(function (lhs, rhs) {
+    if (lhs.position < rhs.position) {
+      return -1;
+    }
+    if (lhs.position < rhs.position) {
+      return 1;
+    }
+
+    return 0;
+  });
+
+  return sorted_records;
 }

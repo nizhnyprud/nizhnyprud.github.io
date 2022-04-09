@@ -71,14 +71,36 @@
         statusFail("Can't load document");
       }
     }
+
+    async function loadPastEvent() {
+      console.log("QQQ");
+      const records = await preparePastEvent();
+      console.log(records.length);
+      for (var i = 0; i < records.length; i++) {
+        var id = "cell_" + (i + 1) + "_" + 0;
+        localStorage.setItem(id, records[i].position);
+
+        //        if (records[i].token != null && records[i].token != '') {
+        var id = "cell_" + (i + 1) + "_" + 1;
+        localStorage.setItem(id, records[i].token);
+        //      }
+
+
+        var id = "cell_" + (i + 1) + "_" + 2;
+        localStorage.setItem(id, records[i].details);
+      }
+      window.NP.max_row_idx = records.length;
+      window.location.reload();
+    }
   </script>
 </head>
 
 <body>
   <div id="start_event_div" class="container-fluid p5 vp-100" style="display:none;">
-    <div class="h-100 d-flex align-items-center">
-      <input id="event_name" type="text" class="form-control col" placeholder="2022-03-19">
-      <button class="btn btn-primary rounded" onclick=startEvent()>Начать ивент</button>
+    <div class="h-100 d-flex align-items-center m-1">
+      <input id="event_name" type="text" class="form-control col m-1" placeholder="2022-03-19">
+      <button class="btn btn-primary rounded m-1" onclick=startEvent()>Начать ивент</button>
+      <button class="btn btn-secondary rounded m-1" onclick=loadPastEvent()>Из файла</button>
     </div>
   </div>
 
